@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>114學年度海外僑生推薦入學榜單查詢系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts 的 Inter 字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 自定義樣式 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 調整下拉選單箭頭顏色以適應深色模式 */
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* 表格動畫 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .table-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-2xl md:text-4xl font-bold text-white">114學年度海外僑生推薦入學榜單</h1>
+            <p class="text-gray-400 mt-2">錄取名單查詢系統</p>
+        </header>
+
+        <main class="bg-gray-800 shadow-2xl rounded-2xl p-6 md:p-8">
+            <!-- 查詢控制項 -->
+            <div class="flex flex-col md:flex-row md:items-end gap-4 mb-8">
+                <!-- 學校選擇 -->
+                <div class="flex-1">
+                    <label for="school-select" class="block mb-2 text-sm font-medium text-gray-300">1. 請選擇學校</label>
+                    <select id="school-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        <option selected disabled value="">選擇一所學校...</option>
+                        <option value="國立臺灣大學">國立臺灣大學</option>
+                        <option value="國立臺灣師範大學">國立臺灣師範大學</option>
+                        <option value="國立臺灣科技大學">國立臺灣科技大學</option>
+                    </select>
+                </div>
+                <!-- 學系輸入 -->
+                <div id="department-container" class="flex-1 hidden">
+                    <label for="department-input" class="block mb-2 text-sm font-medium text-gray-300">2. 請輸入學系名稱 (可部分)</label>
+                    <input type="text" id="department-input" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="例如：資訊工程">
+                </div>
+                <!-- 查詢按鈕 -->
+                <div id="button-container" class="hidden">
+                    <button id="search-btn" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center text-white transition-colors duration-300">
+                        查詢
+                    </button>
+                </div>
+            </div>
+
+            <!-- 查詢結果區域 -->
+            <div id="results-container">
+                <div class="text-center text-gray-500 py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-400">請先選擇學校以開始查詢</h3>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-xs text-gray-500">
+            <p>資料來源：114學年度國立臺灣大學等3校學士班海外高中推薦入學錄取名單</p>
+            <p>本頁面僅供查詢參考，最終錄取結果以各校正式通知為準。</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 資料庫 ---
+        // 根據您提供的 PDF 檔案內容整理出的結構化資料
+        const admissionData = [
+            // 國立臺灣大學
+            {school:"國立臺灣大學", id:"11400320", name:"藍○喻", type:"港澳生", status:"正取", department:"中國文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400574", name:"李○桑", type:"僑生", status:"正取", department:"中國文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400795", name:"楊○伶", type:"港澳生", status:"正取", department:"中國文學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400863", name:"劉○雨", type:"港澳生", status:"正取", department:"中國文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400886", name:"林○欣", type:"僑生", status:"正取", department:"中國文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400093", name:"郭○珊", type:"僑生", status:"正取", department:"外國語文學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400483", name:"韋○汝", type:"僑生", status:"正取", department:"外國語文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400520", name:"周○霖", type:"僑生", status:"正取", department:"外國語文學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400605", name:"周○曦", type:"僑生", status:"正取", department:"外國語文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400621", name:"周○飛", type:"僑生", status:"正取", department:"外國語文學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401135", name:"蘇○勝", type:"僑生", status:"正取", department:"外國語文學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400351", name:"柯○文", type:"僑生", status:"正取", department:"歷史學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400597", name:"黃○瑜", type:"僑生", status:"正取", department:"歷史學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401105", name:"梁○淇", type:"港澳生", status:"正取", department:"歷史學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401185", name:"邱○恩", type:"僑生", status:"正取", department:"歷史學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400269", name:"黃○恩", type:"僑生", status:"正取", department:"人類學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401051", name:"梁○芝", type:"港澳生", status:"正取", department:"人類學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400386", name:"李○凱", type:"僑生", status:"正取", department:"戲劇學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400388", name:"鄭○聰", type:"僑生", status:"正取", department:"戲劇學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400504", name:"陳○睿", type:"僑生", status:"正取", department:"物理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400720", name:"林○弘", type:"僑生", status:"正取", department:"物理學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401033", name:"金○璇", type:"僑生", status:"正取", department:"化學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401067", name:"李○平", type:"僑生", status:"正取", department:"化學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400746", name:"梁○瑤", type:"港澳具外國國籍之華裔學生", status:"正取", department:"心理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400940", name:"朱○怡", type:"港澳生", status:"正取", department:"心理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401026", name:"曾○熹", type:"僑生", status:"正取", department:"心理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400122", name:"黃○希", type:"僑生", status:"正取", department:"地理環境資源學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400572", name:"林○宣", type:"僑生", status:"正取", department:"地理環境資源學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400603", name:"楊○哲", type:"僑生", status:"正取", department:"大氣科學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400010", name:"魏○微", type:"僑生", status:"正取", department:"政治學系 國際關係組", scholarship:""},
+            {school:"國立臺灣大學", id:"11400094", name:"韓○旭", type:"僑生", status:"正取", department:"政治學系 國際關係組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400095", name:"呂○穎", type:"僑生", status:"正取", department:"政治學系 國際關係組", scholarship:""},
+            {school:"國立臺灣大學", id:"11400932", name:"呂○慧", type:"僑生", status:"正取", department:"政治學系 國際關係組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401108", name:"徐○晴", type:"僑生", status:"正取", department:"政治學系 國際關係組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400482", name:"高○智", type:"僑生", status:"正取", department:"經濟學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400705", name:"施○權", type:"港澳生", status:"正取", department:"經濟學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400425", name:"毛○邦", type:"港澳生", status:"正取", department:"社會學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400704", name:"林○妍", type:"港澳生", status:"正取", department:"社會學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400869", name:"殷○洋", type:"僑生", status:"正取", department:"社會學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400770", name:"林○璇", type:"港澳生", status:"正取", department:"社會工作學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400874", name:"黃○晞", type:"港澳生", status:"正取", department:"社會工作學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400352", name:"林○毅", type:"僑生", status:"正取", department:"醫學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400127", name:"陳○欣", type:"僑生", status:"正取", department:"藥學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400626", name:"羅○妮", type:"僑生", status:"正取", department:"藥學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400742", name:"吳○恩", type:"港澳生", status:"正取", department:"藥學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400768", name:"黃○詩", type:"港澳生", status:"正取", department:"藥學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400815", name:"陳○俊", type:"港澳生", status:"正取", department:"藥學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401023", name:"吳○瑩", type:"僑生", status:"正取", department:"藥學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400125", name:"蔡○語", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400160", name:"洪○宜", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400370", name:"黃○晴", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400612", name:"王○寧", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400753", name:"黎○誠", type:"港澳生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400812", name:"唐○寧", type:"港澳生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400989", name:"黃○慧", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401032", name:"曾○彤", type:"僑生", status:"正取", department:"醫學檢驗暨生物技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400775", name:"陳○霖", type:"港澳具外國國籍之華裔學生", status:"正取", department:"護理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400743", name:"李○柔", type:"港澳生", status:"正取", department:"物理治療學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400756", name:"方○琳", type:"港澳生", status:"正取", department:"物理治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400757", name:"朱○祁", type:"港澳生", status:"正取", department:"物理治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400767", name:"黃○洋", type:"港澳生", status:"正取", department:"物理治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400256", name:"林○恆", type:"僑生", status:"正取", department:"職能治療學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400778", name:"何○倫", type:"港澳生", status:"正取", department:"職能治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400788", name:"梁○欣", type:"港澳具外國國籍之華裔學生", status:"正取", department:"職能治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400848", name:"郭○榆", type:"港澳生", status:"正取", department:"職能治療學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400462", name:"林○哲", type:"僑生", status:"正取", department:"土木工程學系 中文班", scholarship:""},
+            {school:"國立臺灣大學", id:"11400763", name:"區○怡", type:"港澳生", status:"正取", department:"土木工程學系 中文班", scholarship:""},
+            {school:"國立臺灣大學", id:"11400764", name:"梁○晞", type:"港澳具外國國籍之華裔學生", status:"正取", department:"土木工程學系 中文班", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401223", name:"李○凰", type:"僑生", status:"正取", department:"土木工程學系 中文班", scholarship:""},
+            {school:"國立臺灣大學", id:"11400023", name:"林○宇", type:"僑生", status:"正取", department:"機械工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400249", name:"劉○江", type:"僑生", status:"正取", department:"機械工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400350", name:"陳○寬", type:"僑生", status:"正取", department:"機械工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400416", name:"金○奭", type:"僑生", status:"條件式錄取", department:"機械工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400819", name:"陳○元", type:"僑生", status:"正取", department:"機械工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400928", name:"陳○億", type:"僑生", status:"正取", department:"機械工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401188", name:"吳○", type:"港澳生", status:"正取", department:"機械工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400003", name:"朱○兒", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400034", name:"黃○家", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400040", name:"黃○州", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400134", name:"陳○爾", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400214", name:"關○元", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400300", name:"黃○菱", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400463", name:"鄭○泓", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400506", name:"潘○勝", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400620", name:"謝○平", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400641", name:"彭○軒", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400748", name:"陳○浩", type:"港澳生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400831", name:"廖○誠", type:"僑生", status:"正取", department:"化學工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400935", name:"李○怡", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401036", name:"呂○太", type:"僑生", status:"正取", department:"化學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401025", name:"童○城", type:"僑生", status:"正取", department:"材料科學與工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401028", name:"賴○俊", type:"僑生", status:"正取", department:"材料科學與工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401149", name:"趙○磊", type:"港澳生", status:"正取", department:"材料科學與工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400219", name:"池○娟", type:"僑生", status:"正取", department:"醫學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400239", name:"馮○愛", type:"僑生", status:"正取", department:"醫學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400866", name:"黃○斌", type:"僑生", status:"正取", department:"醫學工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400084", name:"林○瑞", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400165", name:"林○莉", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400311", name:"李○倪", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400343", name:"謝○貞", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400407", name:"林○維", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400581", name:"餘○君", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400659", name:"黃○根", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400697", name:"楊○金", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400965", name:"蔡○沂", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401133", name:"黃○妤", type:"僑生", status:"正取", department:"智慧工程科技全英語學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400338", name:"林○達", type:"僑生", status:"條件式錄取", department:"農藝學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400793", name:"梁○蕙", type:"港澳生", status:"正取", department:"生物環境系統工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400931", name:"黃○瑜", type:"僑生", status:"正取", department:"生物環境系統工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401128", name:"梁○琳", type:"港澳生", status:"正取", department:"生物環境系統工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400234", name:"周○敏", type:"僑生", status:"正取", department:"農業化學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400786", name:"張○言", type:"港澳生", status:"正取", department:"動物科學技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400963", name:"鄺○君", type:"港澳生", status:"正取", department:"動物科學技術學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400231", name:"關○聖", type:"僑生", status:"正取", department:"農業經濟學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400851", name:"陳○欣", type:"港澳生", status:"正取", department:"園藝暨景觀學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400284", name:"王○樂", type:"僑生", status:"正取", department:"獸醫學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400303", name:"熊○妮", type:"僑生", status:"正取", department:"生物機電工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400660", name:"鄭○琳", type:"僑生", status:"正取", department:"植物病理與微生物學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400844", name:"吳○妍", type:"港澳生", status:"正取", department:"植物病理與微生物學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400216", name:"張○", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400428", name:"施○蓮", type:"僑生", status:"條件式錄取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400548", name:"林○媛", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400723", name:"黃○琦", type:"僑生", status:"條件式錄取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400908", name:"彭○琪", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401039", name:"李○輝", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401049", name:"陳○星", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401130", name:"李○蒋", type:"僑生", status:"正取", department:"生物科技與食品營養學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400364", name:"李○瑩", type:"僑生", status:"正取", department:"工商管理學系企業管理組", scholarship:""},
+            {school:"國立臺灣大學", id:"11400469", name:"蔡○倩", type:"僑生", status:"正取", department:"工商管理學系企業管理組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400473", name:"張○其", type:"僑生", status:"正取", department:"工商管理學系企業管理組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400766", name:"陳○為", type:"港澳生", status:"正取", department:"工商管理學系企業管理組", scholarship:""},
+            {school:"國立臺灣大學", id:"11401096", name:"王○安", type:"僑生", status:"正取", department:"工商管理學系企業管理組", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401138", name:"施○青", type:"僑生", status:"正取", department:"工商管理學系 科技管理組", scholarship:""},
+            {school:"國立臺灣大學", id:"11400344", name:"李○慧", type:"僑生", status:"正取", department:"會計學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400830", name:"黃○浩", type:"僑生", status:"正取", department:"會計學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400985", name:"劉○靖", type:"僑生", status:"正取", department:"會計學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400124", name:"鄭○琳", type:"僑生", status:"正取", department:"財務金融學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400278", name:"蔡○妤", type:"僑生", status:"正取", department:"財務金融學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400380", name:"鍾○滿", type:"僑生", status:"正取", department:"國際企業學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400389", name:"梁○文", type:"僑生", status:"正取", department:"國際企業學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400618", name:"張○渝", type:"僑生", status:"正取", department:"國際企業學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400078", name:"蘇○嘉", type:"僑生", status:"正取", department:"資訊管理學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400627", name:"劉○弘", type:"僑生", status:"正取", department:"資訊管理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400706", name:"鍾○樑", type:"港澳生", status:"正取", department:"資訊管理學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401031", name:"劉○好", type:"僑生", status:"正取", department:"資訊管理學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400910", name:"詹○慧", type:"僑生", status:"條件式錄取", department:"公共衛生學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400140", name:"黃○戚", type:"僑生", status:"正取", department:"電機工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400148", name:"詹○羽", type:"僑生", status:"正取", department:"電機工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401058", name:"何○銘", type:"港澳生", status:"正取", department:"電機工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401111", name:"邱○澄", type:"僑生", status:"正取", department:"電機工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400448", name:"鄭○溱", type:"僑生", status:"正取", department:"資訊工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400528", name:"陳○慧", type:"僑生", status:"正取", department:"資訊工程學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400709", name:"王○琳", type:"僑生", status:"正取", department:"資訊工程學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401027", name:"孔○璇", type:"僑生", status:"正取", department:"法律學系 法學組", scholarship:""},
+            {school:"國立臺灣大學", id:"11400107", name:"謝○凌", type:"僑生", status:"正取", department:"生命科學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400694", name:"關○文", type:"港澳生", status:"正取", department:"生命科學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400708", name:"黃○竣", type:"僑生", status:"正取", department:"生命科學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400759", name:"何○樺", type:"港澳生", status:"正取", department:"生命科學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400845", name:"馮○暄", type:"港澳生", status:"正取", department:"生命科學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400128", name:"施○璇", type:"僑生", status:"正取", department:"生化科技學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400534", name:"陳○莎", type:"僑生", status:"條件式錄取", department:"生化科技學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400650", name:"陳○源", type:"僑生", status:"正取", department:"生化科技學系", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400794", name:"林○寧", type:"港澳生", status:"正取", department:"生化科技學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11401161", name:"林○麗", type:"僑生", status:"正取", department:"生化科技學系", scholarship:""},
+            {school:"國立臺灣大學", id:"11400099", name:"唐○汶", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400141", name:"許○芝", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400185", name:"林○永", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400294", name:"林○傑", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400298", name:"洪○", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400434", name:"陳○英", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400524", name:"勾○輝", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400714", name:"賴○傑", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400725", name:"洪○財", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400758", name:"池○", type:"港澳生", status:"正取", department:"國際半導體學士學位學程", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11400781", name:"盧○楠", type:"港澳生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11400787", name:"梁○軒", type:"港澳生", status:"正取", department:"國際半導體學士學位學程", scholarship:"學雜費減免+每月生活補助費NTD 8,000"},
+            {school:"國立臺灣大學", id:"11401155", name:"高○", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401160", name:"洪○桂", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401233", name:"陳○憫", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            {school:"國立臺灣大學", id:"11401237", name:"蔡○彤", type:"僑生", status:"正取", department:"國際半導體學士學位學程", scholarship:""},
+            
+            // 國立臺灣師範大學
+            {school:"國立臺灣師範大學", id:"11400503", name:"陳○俐", type:"僑生", status:"正取", department:"教育學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400776", name:"程○浩", type:"港澳生", status:"正取", department:"教育學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400275", name:"巫○慧", type:"僑生", status:"正取", department:"教育心理與輔導學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401110", name:"徐○庭", type:"僑生", status:"正取", department:"教育心理與輔導學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400323", name:"郭○秀", type:"僑生", status:"正取", department:"幼兒與家庭科學學系 家庭生活與教育組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401022", name:"陳○蓁", type:"僑生", status:"正取", department:"幼兒與家庭科學學系 家庭生活與教育組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400020", name:"楊○勝", type:"僑生", status:"正取", department:"幼兒與家庭科學學系 幼兒發展與教育組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400727", name:"鄧○言", type:"港澳生", status:"正取", department:"幼兒與家庭科學學系 幼兒發展與教育組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400958", name:"丘○宇", type:"港澳生", status:"正取", department:"公民教育與活動領導學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401154", name:"陸○澄", type:"港澳生", status:"正取", department:"公民教育與活動領導學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400263", name:"陳○薇", type:"僑生", status:"正取", department:"特殊教育學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400855", name:"李○楠", type:"港澳生", status:"正取", department:"特殊教育學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400203", name:"趙○娟", type:"僑生", status:"正取", department:"教育學院學士班", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400315", name:"黃○佳", type:"僑生", status:"正取", department:"體育與運動科學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401225", name:"邱○煒", type:"港澳生", status:"正取", department:"體育與運動科學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400599", name:"黃○涵", type:"僑生", status:"正取", department:"國文學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401162", name:"梁○稀", type:"港澳生", status:"正取", department:"國文學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400426", name:"黃○華", type:"僑生", status:"正取", department:"英語學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400715", name:"魏○剛", type:"僑生", status:"正取", department:"英語學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401021", name:"林○瑩", type:"僑生", status:"正取", department:"地理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401057", name:"何○琪", type:"港澳生", status:"正取", department:"地理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401194", name:"施○朗", type:"港澳生", status:"正取", department:"臺灣語文學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400774", name:"林○澄", type:"港澳生", status:"正取", department:"歷史學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400846", name:"麥○珊", type:"港澳生", status:"正取", department:"歷史學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400441", name:"呂○山", type:"僑生", status:"正取", department:"數學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400696", name:"江○權", type:"僑生", status:"正取", department:"數學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400400", name:"吳○寶", type:"僑生", status:"正取", department:"物理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400511", name:"陳○", type:"僑生", status:"正取", department:"物理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400730", name:"劉○誼", type:"港澳生", status:"正取", department:"生命科學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400990", name:"洪○益", type:"僑生", status:"正取", department:"地球科學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400112", name:"葉○伶", type:"僑生", status:"正取", department:"資訊工程學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400016", name:"林○平", type:"僑生", status:"正取", department:"營養科學學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401009", name:"李○錦", type:"僑生", status:"正取", department:"營養科學學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400155", name:"葉○祥", type:"僑生", status:"正取", department:"車輛與能源工程學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400181", name:"王○源", type:"僑生", status:"正取", department:"車輛與能源工程學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400536", name:"黃○友", type:"僑生", status:"正取", department:"科技應用與人力資源發展學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400900", name:"楊○勝", type:"僑生", status:"正取", department:"科技應用與人力資源發展學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400968", name:"姚○婷", type:"僑生", status:"正取", department:"圖文傳播學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400873", name:"梁○齊", type:"港澳生", status:"正取", department:"機電工程學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401139", name:"王○宇", type:"僑生", status:"正取", department:"電機工程學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400860", name:"曾○茹", type:"港澳生", status:"正取", department:"表演藝術學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401202", name:"呂○琦", type:"港澳生", status:"正取", department:"表演藝術學士學位學程", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400547", name:"林○英", type:"僑生", status:"正取", department:"企業管理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400738", name:"陳○朗", type:"港澳生", status:"正取", department:"企業管理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401136", name:"蔡○諭", type:"僑生", status:"正取", department:"企業管理學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400872", name:"陳○妮", type:"港澳生", status:"正取", department:"美術學系 繪畫組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400890", name:"林○信", type:"僑生", status:"正取", department:"設計學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11401145", name:"黃○靈", type:"僑生", status:"正取", department:"設計學系", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400022", name:"林○圻", type:"僑生", status:"正取", department:"華語文教學系 應用華語文學組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400871", name:"陳○霞", type:"僑生", status:"正取", department:"華語文教學系應用華語文學組", scholarship:""},
+            {school:"國立臺灣師範大學", id:"11400009", name:"馮○婷", type:"僑生", status:"正取", department:"東亞學系", scholarship:""},
+
+            // 國立臺灣科技大學
+            {school:"國立臺灣科技大學", id:"11400373", name:"賴○妍", type:"僑生", status:"正取", department:"機械工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400066", name:"楊○慧", type:"僑生", status:"正取", department:"材料科學與工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400519", name:"謝○錢", type:"僑生", status:"正取", department:"營建工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400564", name:"林○偉", type:"僑生", status:"正取", department:"營建工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400304", name:"魏○新", type:"僑生", status:"正取", department:"化學工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400322", name:"林○靈", type:"僑生", status:"正取", department:"化學工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401212", name:"黃○麗", type:"僑生", status:"正取", department:"化學工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400111", name:"王○嫻", type:"僑生", status:"正取", department:"電子工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400153", name:"許○賢", type:"僑生", status:"正取", department:"電子工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400347", name:"郭○遠", type:"僑生", status:"正取", department:"電子工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400199", name:"林○造", type:"僑生", status:"正取", department:"電機工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400276", name:"羅○", type:"僑生", status:"正取", department:"電機工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400994", name:"陳○良", type:"僑生", status:"正取", department:"電機工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400062", name:"鍾○峰", type:"僑生", status:"正取", department:"資訊工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400189", name:"郭○萍", type:"僑生", status:"正取", department:"資訊工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400514", name:"楊○曼", type:"僑生", status:"正取", department:"資訊工程系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401109", name:"施○撞", type:"僑生", status:"正取", department:"企業管理系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400109", name:"張○柔", type:"僑生", status:"正取", department:"資訊管理系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400628", name:"李○榮", type:"僑生", status:"正取", department:"資訊管理系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401137", name:"游○輝", type:"僑生", status:"正取", department:"資訊管理系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400408", name:"林○妍", type:"僑生", status:"正取", department:"建築系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401152", name:"佐○○文", type:"僑生", status:"正取", department:"建築系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400970", name:"謝○珠", type:"僑生", status:"正取", department:"設計系 工業設計組", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401035", name:"呂○緯", type:"僑生", status:"正取", department:"設計系 工業設計組", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400297", name:"賴○蕙", type:"僑生", status:"正取", department:"設計系 商業設計組", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11401083", name:"梁○嵐", type:"港澳生", status:"正取", department:"設計系 商業設計組", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400048", name:"陳○銘", type:"僑生", status:"正取", department:"應用外語系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400550", name:"陳○鈴", type:"僑生", status:"正取", department:"應用外語系", scholarship:""},
+            {school:"國立臺灣科技大學", id:"11400971", name:"黃○蘭", type:"僑生", status:"正取", department:"應用外語系", scholarship:""},
+        ];
+
+        // --- DOM 元素 ---
+        const schoolSelect = document.getElementById('school-select');
+        const departmentContainer = document.getElementById('department-container');
+        const departmentInput = document.getElementById('department-input');
+        const buttonContainer = document.getElementById('button-container');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsContainer = document.getElementById('results-container');
+
+        // --- 事件監聽 ---
+
+        // 當學校被選擇時，顯示學系輸入框和按鈕
+        schoolSelect.addEventListener('change', () => {
+            if (schoolSelect.value) {
+                departmentContainer.classList.remove('hidden');
+                buttonContainer.classList.remove('hidden');
+            } else {
+                departmentContainer.classList.add('hidden');
+                buttonContainer.classList.add('hidden');
+            }
+            // 清空之前的查詢結果
+            clearResults();
+        });
+
+        // 監聽查詢按鈕點擊事件
+        searchBtn.addEventListener('click', performSearch);
+
+        // 監聽在輸入框中按 Enter 鍵
+        departmentInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+
+        // --- 功能函式 ---
+
+        // 執行查詢
+        function performSearch() {
+            const selectedSchool = schoolSelect.value;
+            const departmentQuery = departmentInput.value.trim();
+
+            if (!selectedSchool) {
+                alert('請先選擇一所學校！');
+                return;
+            }
+            
+            if (!departmentQuery) {
+                alert('請輸入要查詢的學系名稱！');
+                return;
+            }
+
+            const results = admissionData.filter(item => {
+                // 清理學系名稱中的特殊字符和空格，以便更準確地比對
+                const cleanDepartment = item.department.replace(/[\s「」]/g, '');
+                const cleanQuery = departmentQuery.replace(/[\s「」]/g, '');
+                return item.school === selectedSchool && cleanDepartment.includes(cleanQuery);
+            });
+
+            displayResults(results, selectedSchool, departmentQuery);
+        }
+
+        // 顯示查詢結果
+        function displayResults(results, school, department) {
+            resultsContainer.innerHTML = ''; // 清空現有內容
+
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'table-fade-in';
+
+            if (results.length > 0) {
+                // 建立表格
+                const isNtu = school === '國立臺灣大學';
+                const tableHeaders = ['申請序號', '姓名', '身分別', '錄取別', '錄取學系'];
+                if (isNtu) {
+                    tableHeaders.push('獎助學金');
+                }
+
+                const table = document.createElement('table');
+                table.className = 'w-full text-sm text-left text-gray-400';
+
+                // 表頭
+                const thead = document.createElement('thead');
+                thead.className = 'text-xs text-gray-300 uppercase bg-gray-700';
+                let headerRow = '<tr>';
+                tableHeaders.forEach(header => {
+                    headerRow += `<th scope="col" class="px-4 py-3">${header}</th>`;
+                });
+                headerRow += '</tr>';
+                thead.innerHTML = headerRow;
+                
+                // 表格內容
+                const tbody = document.createElement('tbody');
+                results.forEach(item => {
+                    let row = `<tr class="border-b bg-gray-800 border-gray-700 hover:bg-gray-600 transition-colors duration-200">`;
+                    row += `<td class="px-4 py-4">${item.id}</td>`;
+                    row += `<td class="px-4 py-4 text-white font-medium">${item.name}</td>`;
+                    row += `<td class="px-4 py-4">${item.type}</td>`;
+                    row += `<td class="px-4 py-4">${item.status}</td>`;
+                    row += `<td class="px-4 py-4">${item.department}</td>`;
+                    if (isNtu) {
+                        row += `<td class="px-4 py-4">${item.scholarship || '-'}</td>`;
+                    }
+                    row += `</tr>`;
+                    tbody.innerHTML += row;
+                });
+                
+                table.append(thead, tbody);
+
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'relative overflow-x-auto shadow-md rounded-lg';
+                tableContainer.appendChild(table);
+                wrapperDiv.appendChild(tableContainer);
+
+            } else {
+                // 顯示查無資料的訊息
+                wrapperDiv.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-300">查詢不到符合的錄取名單</h3>
+                        <p class="mt-1 text-sm text-gray-500">請確認學校 "${school}" 的學系名稱 "${department}" 是否正確。</p>
+                    </div>
+                `;
+            }
+
+            resultsContainer.appendChild(wrapperDiv);
+        }
+        
+        // 清空查詢結果函式
+        function clearResults() {
+             resultsContainer.innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <p>請輸入學系名稱後點擊查詢按鈕。</p>
+                </div>
+            `;
+        }
+
+    </script>
+
+</body>
+</html>
